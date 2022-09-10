@@ -131,17 +131,10 @@ namespace matrix_library
 
             while (pivotColumn < m.width && pivotRow < m.height) //TODO choose not the largest pivot but first non-zero
             {
-                float maxPivot = 0;
-                int maxPivotRow = int.MaxValue;
                 int firstGoodPivotRow = int.MaxValue;
 
                 for (int i = pivotRow; i < m.height; i++)
                 {
-                    if (Math.Abs(m[i, pivotColumn]) > maxPivot)
-                    {
-                        maxPivot = Math.Abs(m[i, pivotColumn]);
-                        maxPivotRow = i;
-                    }
                     if (m[i, pivotColumn] != 0)
                     {
                         firstGoodPivotRow = i;
@@ -149,14 +142,11 @@ namespace matrix_library
                     }
                 }
 
-                if (maxPivotRow == int.MaxValue)
-                    pivotColumn++;
                 if (firstGoodPivotRow == int.MaxValue)
                     pivotColumn++;
 
                 else
                 {
-                    //m.SwapRows(pivotRow, maxPivotRow);
                     m.SwapRows(pivotRow, firstGoodPivotRow);
                     m.MultiplyRowByConst(pivotRow, (1 / m[pivotRow, pivotColumn]));
 
