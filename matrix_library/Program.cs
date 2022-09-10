@@ -4,7 +4,7 @@ namespace matrix_library
 {
     class Matrix
     {
-        private float[,] matrix;
+        private float[,] matrix { get; set; }
         private int height;
         private int width;
 
@@ -122,14 +122,16 @@ namespace matrix_library
         //   
         //}
 
-        public static Matrix REF(Matrix A)
+        public static Matrix REF(Matrix A, bool RREF = false, bool inverse = false)
         {
-            var m = new Matrix(A.matrix);
-
+            Matrix m = Copy(A);
+            Matrix inv = IdentityMatrix(A.height);
+            
             int pivotColumn = 0;
             int pivotRow = 0;
+            float f;
 
-            while (pivotColumn < m.width && pivotRow < m.height) //TODO choose not the largest pivot but first non-zero
+            while (pivotColumn < m.width && pivotRow < m.height)
             {
                 int firstGoodPivotRow = int.MaxValue;
 
@@ -147,21 +149,82 @@ namespace matrix_library
 
                 else
                 {
+                    f = 1 / m[pivotRow, pivotColumn];
                     m.SwapRows(pivotRow, firstGoodPivotRow);
-                    m.MultiplyRowByConst(pivotRow, (1 / m[pivotRow, pivotColumn]));
+                    m.MultiplyRowByConst(pivotRow, f);
 
-                    float f;
-                    for (int i = pivotRow + 1; i < m.height; i++)
+                    if (inverse)
                     {
+                        inv.SwapRows(pivotRow, firstGoodPivotRow);
+                        inv.MultiplyRowByConst(pivotRow, f);
+                    }
+                    
+                    for (int i = 0; i < m.height; i++)
+                    {
+                        if (!RREF && i <= pivotRow) continue;
+                        if (RREF && i == pivotRow) continue;
+
                         f = m[i, pivotColumn] / m[pivotRow, pivotColumn];
                         m.AddRows(pivotRow, i, -f);
+
+                        if (inverse)
+                            inv.AddRows(pivotRow, i, -f);
                     }
 
                     pivotRow++;
                     pivotColumn++;
                 }
             }
+
+            if (inverse)
+                return inv;
             return m;
+        }
+
+        public static int Rank(Matrix m)
+        {
+            var A = REF(m);
+            bool IsZero(Matrix row)
+            {
+                for (int i = 0; i < A.width; i++)
+                {
+                    if (row[0, i] != 0)
+                        return false;
+                }
+                return true;
+            }
+
+            for (int i = 0; i < A.height; i++)
+            {
+                if (IsZero(A.GetRow(i)))
+                    return i;
+            }
+            return A.height;
+        }
+
+        public static Matrix Inverse(Matrix A)
+        {
+            if (A.height != A.width || Rank(A) != A.height)
+                throw new Exception("cannot invert this.");
+            return REF(A, true, true);
+        }
+
+        public static Matrix RREF(Matrix A)
+        {
+            return REF(A, true);
+        }
+
+        private static Matrix Copy(Matrix A)
+        {
+            float[,] copy = new float[A.height, A.width];
+            for (int i = 0; i < A.height; i++)
+            {
+                for (int j = 0; j < A.width; j++)
+                {
+                    copy[i, j] = A[i, j];
+                }
+            }
+            return new Matrix(copy);
         }
 
         public static float det(Matrix A)
@@ -178,17 +241,17 @@ namespace matrix_library
         
         public static float norm(Matrix v)
         {
-            return (float)Math.Sqrt(ScalarMultiple(v, Transpose(v)));
+            return (float)Math.Sqrt(ScalarMultiple(v, v.Transpose()));
         }
 
-        public static Matrix Transpose(Matrix A)
+        public Matrix Transpose()
         {
-            var AT = new float[A.width, A.height];
-            for (int i = 0; i < A.height; i++)
+            var AT = new float[width, height];
+            for (int i = 0; i < height; i++)
             {
-                for (int j = 0; j < A.width; j++)
+                for (int j = 0; j < width; j++)
                 {
-                    AT[j, i] = A[i, j];
+                    AT[j, i] = this[i, j];
                 }
             }
             return new Matrix(AT);
@@ -216,6 +279,8 @@ namespace matrix_library
             {
                 for (int j = 0; j < width; j++)
                 {
+                    if (matrix[i, j] == -0)
+                        matrix[i, j] = 0;
                     output += matrix[i, j].ToString() + " ";
                 }
                 output += "\n";
@@ -277,9 +342,10 @@ namespace matrix_library
         static void Main(string[] args)
         {
             var A = new Matrix("1 2; 3 4");
-            var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
-            Console.WriteLine(REF(B));
-            Console.WriteLine(B);
+            //var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
+            var B = new Matrix("0 1; 1 0");
+            var I = Inverse(A);
+            Console.WriteLine(A*I);
         }
     }
 
