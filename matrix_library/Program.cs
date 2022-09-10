@@ -129,10 +129,11 @@ namespace matrix_library
             int pivotColumn = 0;
             int pivotRow = 0;
 
-            while (pivotColumn < m.width && pivotRow < m.height)
+            while (pivotColumn < m.width && pivotRow < m.height) //TODO choose not the largest pivot but first non-zero
             {
                 float maxPivot = 0;
                 int maxPivotRow = int.MaxValue;
+                int firstGoodPivotRow = int.MaxValue;
 
                 for (int i = pivotRow; i < m.height; i++)
                 {
@@ -141,14 +142,22 @@ namespace matrix_library
                         maxPivot = Math.Abs(m[i, pivotColumn]);
                         maxPivotRow = i;
                     }
+                    if (m[i, pivotColumn] != 0)
+                    {
+                        firstGoodPivotRow = i;
+                        break;
+                    }
                 }
 
                 if (maxPivotRow == int.MaxValue)
                     pivotColumn++;
+                if (firstGoodPivotRow == int.MaxValue)
+                    pivotColumn++;
 
                 else
                 {
-                    m.SwapRows(pivotRow, maxPivotRow);
+                    //m.SwapRows(pivotRow, maxPivotRow);
+                    m.SwapRows(pivotRow, firstGoodPivotRow);
                     m.MultiplyRowByConst(pivotRow, (1 / m[pivotRow, pivotColumn]));
 
                     float f;
@@ -165,7 +174,6 @@ namespace matrix_library
             return m;
         }
 
-
         public static float det(Matrix A)
         {
             if (A.height != A.width)
@@ -177,7 +185,6 @@ namespace matrix_library
             }
             else return float.PositiveInfinity;
         }
-
         
         public static float norm(Matrix v)
         {
@@ -211,7 +218,6 @@ namespace matrix_library
             
             return res;
         }
-
 
         public override string ToString()
         {
@@ -281,8 +287,9 @@ namespace matrix_library
         static void Main(string[] args)
         {
             var A = new Matrix("1 2; 3 4");
-            var B = new Matrix ("1 3 1 9; 1 1 -1 1; 3 11 5 35");
+            var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
             Console.WriteLine(REF(B));
+            Console.WriteLine(B);
         }
     }
 
