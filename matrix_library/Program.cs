@@ -71,7 +71,8 @@ namespace matrix_library
 
         private float[,] ParseInput(string s)
         {
-            //parse string input TODO put this in constructor
+            // parse string input TODO put this in constructor
+            // TODO "I_n" creates identity matrik of rank n
 
             var rows = s.Trim().Split(';');
             int height = rows.Length;
@@ -139,6 +140,9 @@ namespace matrix_library
 
         private static Matrix Elimination(Matrix A, bool RREF = false, bool inverse = false)
         {
+            // Gauss (-Jordan) elimination. Also used to calculate inverse
+            // TODO maybe change of base
+
             Matrix m = Copy(A);
             Matrix inv = IdentityMatrix(A.height);
 
@@ -287,9 +291,40 @@ namespace matrix_library
         private static Matrix GramSchmidt(Matrix A)
         {
             // does G-S process for columns of A. Returns new orthogonal matrix which columns are the orth. basis
-            Matrix q = new Matrix(new float[A.height, A.width]);
+            Matrix q = new Matrix(A.height, A.width);
 
             //TODO
+
+            // u_k = a_k - (sum j=1 -> (k-1) (proj(a_k, u_j)))    u_k is perpendicular to u_1..u_(k-1)
+            // e_k = u_k / ||u_k||                                normalise
+
+            //Matrix step(int i)
+            //{
+            //    Matrix sum = new Matrix(A.height, 1);
+            //    for (int j = 0; j < i; j++)
+            //        sum += proj(A.GetColumn(i), q.GetColumn(j));
+            //    return A.GetColumn(i) - sum;
+            //}
+
+            // fill up q with orthogonal basis
+            var sum = new Matrix(A.height, 1);
+            for (int i = 0; i < A.width; i++)
+            {
+                //sum = Matrix(A.height, 1);
+                sum.ZeroOut();
+                for (int j = 0; j < i; j++)
+                        sum += proj(A.GetColumn(i), q.GetColumn(j));
+                var u = A.GetColumn(i) - sum;
+                q.SetColumn(u, i);
+            }
+
+            // normalise columns of q
+            for (int i = 0; i < A.width; i++)
+            {
+                var u = q.GetColumn(i);
+                var e = (1 / norm(u)) * u;
+                q.SetColumn(e, i);
+            }
 
             return q;
         }
@@ -300,6 +335,14 @@ namespace matrix_library
             float c = ScalarMultiple(u.Transpose(), a) /
                       ScalarMultiple(u.Transpose(), u);
             return c * u;
+        }
+
+        private void ZeroOut()
+        {
+            // sets all values in matrix to zero
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++)
+                    this[i, j] = 0;
         }
 
         public Matrix Transpose()
@@ -403,7 +446,11 @@ namespace matrix_library
             //var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
             var B = new Matrix("0 1; 1 0");
             var I = Inverse(A);
-            Console.WriteLine(A*I);
+            Console.WriteLine(A);
+            A.ZeroOut();
+            Console.WriteLine(A);
+            var C = new Matrix(3, 3);
+            Console.WriteLine(C);
         }
     }
 
