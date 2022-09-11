@@ -29,7 +29,7 @@ namespace matrix_library
             get => matrix[row, column];
             set => matrix[row, column] = value;
         }
-        
+
         private Matrix GetRow(int index)
         {
             float[,] row = new float[1, width];
@@ -52,6 +52,14 @@ namespace matrix_library
             for (int i = 0; i < height; i++)
                 col[i, 0] = matrix[i, index];
             return new Matrix(col);
+        }
+
+        private void SetColumn(Matrix col, int index)
+        {
+            for (int i = 0; i < height; i++)
+            {
+                matrix[i, index] = col[i, 0];
+            }
         }
 
         private float[,] ParseInput(string s)
@@ -126,7 +134,7 @@ namespace matrix_library
         {
             Matrix m = Copy(A);
             Matrix inv = IdentityMatrix(A.height);
-            
+
             int pivotColumn = 0;
             int pivotRow = 0;
             float f;
@@ -158,7 +166,7 @@ namespace matrix_library
                         inv.SwapRows(pivotRow, firstGoodPivotRow);
                         inv.MultiplyRowByConst(pivotRow, f);
                     }
-                    
+
                     for (int i = 0; i < m.height; i++)
                     {
                         if (!RREF && i <= pivotRow) continue;
@@ -238,10 +246,48 @@ namespace matrix_library
             }
             else return float.PositiveInfinity;
         }
-        
+
         public static float norm(Matrix v)
         {
             return (float)Math.Sqrt(ScalarMultiple(v, v.Transpose()));
+        }
+
+        public static float[] QR_Algorithm(Matrix A)
+        {
+            // algorithm for computing eigen(values/vectors)
+            var decomp = QR_Decomp(A);
+            var Q = decomp[0];
+            var R = decomp[1];
+
+            //TODO
+
+            return null;
+        }
+
+        public static Matrix[] QR_Decomp(Matrix A)
+        {
+            // A = Q*R, s.t Q orthogonal and R upper triang.
+            Matrix Q = GramSchmidt(A);
+            Matrix R = Q.Transpose() * A;
+            return new Matrix[2] { Q, R };
+        }
+
+        private static Matrix GramSchmidt(Matrix A)
+        {
+            // does G-S process for columns of A. Returns new orthogonal matrix which columns are the orth. basis
+            Matrix q = new Matrix(new float[A.height, A.width]);
+
+            //TODO
+
+            return q;
+        }
+
+        private static Matrix proj(Matrix a, Matrix u)
+        {
+            // projection of vector a onto vector u. (<u, a> / <u, u>) * u
+            float c = ScalarMultiple(u.Transpose(), a) /
+                      ScalarMultiple(u.Transpose(), u);
+            return c * u;
         }
 
         public Matrix Transpose()
@@ -259,7 +305,7 @@ namespace matrix_library
 
         public static float ScalarMultiple(Matrix a, Matrix b)
         {
-            // scalar (dot) product of two vectors
+            // standard scalar (dot) product of two vectors
 
             if ((a.height != 1) || (b.width != 1) || (a.width != b.height)) 
                 throw new Exception("cannot do scalar product of this");
