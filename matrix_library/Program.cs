@@ -5,14 +5,21 @@ namespace matrix_library
     class Matrix
     {
         private float[,] matrix { get; set; }
-        private int height;
-        private int width;
+        private readonly int height;
+        private readonly int width;
 
         public Matrix(float[,] input)
         {
+            matrix = input;
             height = input.GetLength(0);
             width = input.GetLength(1);
-            matrix = input;
+        }
+
+        public Matrix(int height, int width)
+        {
+            matrix = new float[height, width];
+            this.height = height;
+            this.width = width;
         }
 
         public Matrix(string s)
@@ -130,7 +137,7 @@ namespace matrix_library
         //   
         //}
 
-        public static Matrix REF(Matrix A, bool RREF = false, bool inverse = false)
+        private static Matrix Elimination(Matrix A, bool RREF = false, bool inverse = false)
         {
             Matrix m = Copy(A);
             Matrix inv = IdentityMatrix(A.height);
@@ -191,7 +198,7 @@ namespace matrix_library
 
         public static int Rank(Matrix m)
         {
-            var A = REF(m);
+            var A = Elimination(m);
             bool IsZero(Matrix row)
             {
                 for (int i = 0; i < A.width; i++)
@@ -210,16 +217,21 @@ namespace matrix_library
             return A.height;
         }
 
+        public static Matrix REF(Matrix A)
+        {
+            return Elimination(A);
+        }
+
         public static Matrix Inverse(Matrix A)
         {
             if (A.height != A.width || Rank(A) != A.height)
                 throw new Exception("cannot invert this.");
-            return REF(A, true, true);
+            return Elimination(A, true, true);
         }
 
         public static Matrix RREF(Matrix A)
         {
-            return REF(A, true);
+            return Elimination(A, true);
         }
 
         private static Matrix Copy(Matrix A)
