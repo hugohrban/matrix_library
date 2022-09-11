@@ -310,10 +310,9 @@ namespace matrix_library
             var sum = new Matrix(A.height, 1);
             for (int i = 0; i < A.width; i++)
             {
-                //sum = Matrix(A.height, 1);
                 sum.ZeroOut();
                 for (int j = 0; j < i; j++)
-                        sum += proj(A.GetColumn(i), q.GetColumn(j));
+                    sum += proj(A.GetColumn(i), q.GetColumn(j));
                 var u = A.GetColumn(i) - sum;
                 q.SetColumn(u, i);
             }
@@ -329,9 +328,15 @@ namespace matrix_library
             return q;
         }
 
+        /// <summary>
+        /// Projection of vector a on vector u
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="u"></param>
+        /// <returns>Projection vector (Matrix type)</returns>
         private static Matrix proj(Matrix a, Matrix u)
         {
-            // projection of vector a onto vector u. (<u, a> / <u, u>) * u
+            // (<u, a> / <u, u>) * u
             float c = ScalarMultiple(u.Transpose(), a) /
                       ScalarMultiple(u.Transpose(), u);
             return c * u;
@@ -362,13 +367,26 @@ namespace matrix_library
         {
             // standard scalar (dot) product of two vectors
 
-            if ((a.height != 1) || (b.width != 1) || (a.width != b.height)) 
-                throw new Exception("cannot do scalar product of this");
+            //if ((a.height != 1) || (b.width != 1) || (a.width != b.height)) 
+            //    throw new Exception("cannot do scalar product of this");
+
+            if ((a.height != 1 && a.width != 1) || (b.height != 1 && b.width != 1))
+                throw new Exception("cannot do scalar product.");
+
+            if (a.height == 1)
+                a = a.Transpose();
+
+            if (b.height == 1)
+                b = b.Transpose();
+
+            if (a.height != b.height)
+                throw new Exception("cannot do scalar product.");
 
             float res = 0;
 
-            for (int i = 0; i < a.width; i++)
-                res += a[0, i] * b[i, 0];
+            for (int i = 0; i < a.height; i++)
+                //res += a[0, i] * b[i, 0];
+                res += a[i, 0] * b[i, 0];
             
             return res;
         }
@@ -386,7 +404,7 @@ namespace matrix_library
                 }
                 output += "\n";
             }
-            return output;
+            return output.Trim();
         }
 
         public static Matrix operator +(Matrix a, Matrix b)
@@ -446,13 +464,31 @@ namespace matrix_library
             //var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
             var B = new Matrix("0 1; 1 0");
             var I = Inverse(A);
-            Console.WriteLine(A);
-            A.ZeroOut();
-            Console.WriteLine(A);
-            var C = new Matrix(3, 3);
-            Console.WriteLine(C);
+            var v1 = new Matrix("1 2 3 4; 0 0 0 0");
+            var v2 = new Matrix("1 0 1 0");
+            Console.WriteLine(v1);
+            Console.WriteLine(ScalarMultiple(v1, v2));
+            Console.WriteLine(v1);
+
+
         }
     }
 
-    class Program { }
+    //class Vector : Matrix
+    //{
+    //    private float[] vector;
+    //    private int length;
+
+    //    public Vector(int length) : base(length, 1)
+    //    {
+    //        this.length = length;
+    //    }
+
+    //    public Vector(Matrix m) : base(1, 1)
+    //    {
+    //        if (m)
+    //    }
+    //}
+
+    
 }
