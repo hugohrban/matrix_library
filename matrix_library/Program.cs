@@ -265,7 +265,7 @@ namespace matrix_library
 
         public static float norm(Matrix v)
         {
-            return (float)Math.Sqrt(ScalarMultiple(v, v.Transpose()));
+            return (float)Math.Sqrt(ScalarProduct(v, v));
         }
 
         public static float[] QR_Algorithm(Matrix A)
@@ -291,20 +291,12 @@ namespace matrix_library
         private static Matrix GramSchmidt(Matrix A)
         {
             // does G-S process for columns of A. Returns new orthogonal matrix which columns are the orth. basis
-            Matrix q = new Matrix(A.height, A.width);
-
-            //TODO
-
             // u_k = a_k - (sum j=1 -> (k-1) (proj(a_k, u_j)))    u_k is perpendicular to u_1..u_(k-1)
             // e_k = u_k / ||u_k||                                normalise
 
-            //Matrix step(int i)
-            //{
-            //    Matrix sum = new Matrix(A.height, 1);
-            //    for (int j = 0; j < i; j++)
-            //        sum += proj(A.GetColumn(i), q.GetColumn(j));
-            //    return A.GetColumn(i) - sum;
-            //}
+            //TODO test
+
+            Matrix q = new Matrix(A.height, A.width);
 
             // fill up q with orthogonal basis
             var sum = new Matrix(A.height, 1);
@@ -337,8 +329,8 @@ namespace matrix_library
         private static Matrix proj(Matrix a, Matrix u)
         {
             // (<u, a> / <u, u>) * u
-            float c = ScalarMultiple(u.Transpose(), a) /
-                      ScalarMultiple(u.Transpose(), u);
+            float c = ScalarProduct(u, a) /
+                      ScalarProduct(u, u);
             return c * u;
         }
 
@@ -363,15 +355,12 @@ namespace matrix_library
             return new Matrix(AT);
         }
 
-        public static float ScalarMultiple(Matrix a, Matrix b)
+        public static float ScalarProduct(Matrix a, Matrix b)
         {
             // standard scalar (dot) product of two vectors
 
-            //if ((a.height != 1) || (b.width != 1) || (a.width != b.height)) 
-            //    throw new Exception("cannot do scalar product of this");
-
-            if ((a.height != 1 && a.width != 1) || (b.height != 1 && b.width != 1))
-                throw new Exception("cannot do scalar product.");
+            //if ((a.height != 1 && a.width != 1) || (b.height != 1 && b.width != 1))
+            //    throw new Exception("cannot do scalar product.");
 
             if (a.height == 1)
                 a = a.Transpose();
@@ -379,7 +368,7 @@ namespace matrix_library
             if (b.height == 1)
                 b = b.Transpose();
 
-            if (a.height != b.height)
+            if (a.height != b.height || a.width != 1 || b.width != 1)
                 throw new Exception("cannot do scalar product.");
 
             float res = 0;
@@ -394,17 +383,19 @@ namespace matrix_library
         public override string ToString()
         {
             string output = "";
+            double temp;
             for (int i = 0; i < height; i++)
             {
                 for (int j = 0; j < width; j++)
                 {
-                    if (matrix[i, j] == -0)
-                        matrix[i, j] = 0;
-                    output += matrix[i, j].ToString() + " ";
+                    temp = Math.Round(matrix[i, j], 3);
+                    if (temp == -0)
+                        temp = 0;
+                    output += temp.ToString() + " ";
                 }
                 output += "\n";
             }
-            return output.Trim();
+            return output;
         }
 
         public static Matrix operator +(Matrix a, Matrix b)
@@ -452,7 +443,7 @@ namespace matrix_library
             {
                 for (int j = 0; j < b.width; j++)
                 {
-                    product[i, j] = ScalarMultiple(a.GetRow(i), b.GetColumn(j));
+                    product[i, j] = ScalarProduct(a.GetRow(i), b.GetColumn(j));
                 }
             }
             return new Matrix(product);
@@ -460,16 +451,13 @@ namespace matrix_library
 
         static void Main(string[] args)
         {
-            var A = new Matrix("1 2; 3 4");
+            var A = new Matrix("12 -51 4; 6 167 -68; -4 24 -41");
             //var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
             var B = new Matrix("0 1; 1 0");
-            var I = Inverse(A);
-            var v1 = new Matrix("1 2 3 4; 0 0 0 0");
-            var v2 = new Matrix("1 0 1 0");
-            Console.WriteLine(v1);
-            Console.WriteLine(ScalarMultiple(v1, v2));
-            Console.WriteLine(v1);
-
+            Console.WriteLine(A);
+            var Q = QR_Decomp(A)[0];
+            Console.WriteLine(QR_Decomp(A)[0] * QR_Decomp(A)[1]);
+            Console.WriteLine(A * Inverse(A));
 
         }
     }
