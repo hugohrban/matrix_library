@@ -133,11 +133,7 @@ namespace matrix_library
         //    
         //}
 
-        //public static int Rank(Matrix M)
-        //{
-        //   
-        //}
-
+        
         private static Matrix Elimination(Matrix A, bool RREF = false, bool inverse = false)
         {
             // Gauss (-Jordan) elimination. Also used to calculate inverse
@@ -168,7 +164,7 @@ namespace matrix_library
 
                 else
                 {
-                    f = 1 / m[pivotRow, pivotColumn];
+                    f = 1 / m[firstGoodPivotRow, pivotColumn];
                     m.SwapRows(pivotRow, firstGoodPivotRow);
                     m.MultiplyRowByConst(pivotRow, f);
 
@@ -268,16 +264,82 @@ namespace matrix_library
             return (float)Math.Sqrt(ScalarProduct(v, v));
         }
 
-        public static float[] QR_Algorithm(Matrix A)
+        public static Matrix Eigen(Matrix A, bool eigVal = true)
+        {
+            try
+            {
+                var eigVals = QR_Algorithm(A, 50).diag();
+                if (eigVal)
+                    return eigVals;
+                return null; //TODO
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("Couldn't calculate all eigenpairs.\nCalculating the largest one...");
+                var maxEigVector = PowerIteration(A, 50);
+                if (!eigVal)
+                    return maxEigVector.GetColumn(0);
+                else
+                    return new Matrix($"{(A * maxEigVector)[0, 0] / maxEigVector[0, 0]}");
+            }
+        }
+
+        public static float[] EigenValues(Matrix A)
+        {
+            return ToArray(Eigen(A, true));
+        }
+
+        public static Matrix EigenVectors(Matrix A)
+        {
+            return Eigen(A, false); //TODO
+        }
+
+        private static float[] ToArray(Matrix A)
+        {
+            if (A.height != 1 && A.width != 0)
+                throw new Exception("Cannot convert this Matrix to one-dimensional array.");
+
+            if (A.width == 1)
+                A = A.Transpose();
+
+            var array = new float[Math.Max(A.width, A.height)];
+            for (int i = 0; i < A.height; i++)
+                array[i] = A[i, 0];
+
+            return array;
+        }
+
+        private static Matrix PowerIteration(Matrix A, int iter)
+        {
+            Matrix guess = new Matrix(A.height, 1);
+            Matrix next_guess = new Matrix(A.height, 1);
+            guess = IdentityMatrix(A.height).GetColumn(0);
+
+            for (int i = 0; i < iter; i++)
+            {
+                next_guess = (1 / norm(A * guess)) * (A * guess);
+                guess = next_guess;
+            }
+            return guess;
+        }
+
+        public static Matrix QR_Algorithm(Matrix A, int iter)
         {
             // algorithm for computing eigen(values/vectors)
-            var decomp = QR_Decomp(A);
-            var Q = decomp[0];
-            var R = decomp[1];
+            Matrix A_next = new Matrix(A.height, A.width);
+            for (int i = 0; i < iter; i++)
+            {
+                var decomp = QR_Decomp(A);
+                var Q = decomp[0];
+                var R = decomp[1];
+                A_next = R * Q;
+                A = A_next;
+            }
 
             //TODO
 
-            return null;
+            return A_next;
         }
 
         public static Matrix[] QR_Decomp(Matrix A)
@@ -290,11 +352,15 @@ namespace matrix_library
 
         private static Matrix GramSchmidt(Matrix A)
         {
-            // does G-S process for columns of A. Returns new orthogonal matrix which columns are the orth. basis
+            // does G-S process for columns of A. Returns new orthogonal matrix which columns are the orth. basis of S(A)
+            // A must be square and its columns linearly independent
             // u_k = a_k - (sum j=1 -> (k-1) (proj(a_k, u_j)))    u_k is perpendicular to u_1..u_(k-1)
             // e_k = u_k / ||u_k||                                normalise
 
             //TODO test
+
+            if (Rank(A.Transpose()) != A.width)
+                throw new Exception("columns of input matrix must be linearly independent.");
 
             Matrix q = new Matrix(A.height, A.width);
 
@@ -332,6 +398,16 @@ namespace matrix_library
             float c = ScalarProduct(u, a) /
                       ScalarProduct(u, u);
             return c * u;
+        }
+
+        private Matrix diag()
+        {
+            if (height != width)
+                throw new Exception("A must be a square matrix");
+            Matrix diag = new Matrix(height, 1);
+            for (int i = 0; i < height; i++)
+                diag[i, 0] = this[i, i];
+            return diag;
         }
 
         private void ZeroOut()
@@ -398,6 +474,11 @@ namespace matrix_library
             return output;
         }
 
+        public string ToString(int i)
+        {
+            return base.ToString();
+        }
+
         public static Matrix operator +(Matrix a, Matrix b)
         {
             if ((a.height != b.height) || (a.width != b.width))
@@ -451,32 +532,28 @@ namespace matrix_library
 
         static void Main(string[] args)
         {
-            var A = new Matrix("12 -51 4; 6 167 -68; -4 24 -41");
+            if (args.Length != 0) Console.WriteLine(args[0]);
+            var A = new Matrix("0 -20 -14 1; 3 27 -4 1; 4 11 -2 1");
             //var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
             var B = new Matrix("0 1; 1 0");
-            Console.WriteLine(A);
-            var Q = QR_Decomp(A)[0];
-            Console.WriteLine(QR_Decomp(A)[0] * QR_Decomp(A)[1]);
-            Console.WriteLine(A * Inverse(A));
+            //var QR = QR_Decomp(A);
+            //var Q = QR[0];
+            //var R = QR[1];
+            //Console.WriteLine(Q.ToString() + "\n" + R.ToString());
+            //Console.WriteLine(QR_Decomp(A)[0] * QR_Decomp(A)[1]);
+            //Console.WriteLine();
+            A = new Matrix("1.0 -1.0 0.0 0.0; -1.0 1.0 -1.0 0.0; 0.0 -1.0 2.0 0.0; 0.0 0.0 0.0 3.0");
+            //A = new Matrix("1 -1 0; 8 -2 6; 1 1 2");
+            //A = new Matrix("-12 3; 4 -1");
+            var eigv = new Matrix("-1; -2; 1");
+            
+            Console.WriteLine(Eigen(A));
+            //var QR = QR_Algorithm(A.Transpose(), 100);
+            //var Q = GramSchmidt(A);
+            
+            //Console.WriteLine(QR);
+            //Console.WriteLine(ScalarProduct(Q.GetColumn(1), Q.GetColumn(2)));
 
         }
     }
-
-    //class Vector : Matrix
-    //{
-    //    private float[] vector;
-    //    private int length;
-
-    //    public Vector(int length) : base(length, 1)
-    //    {
-    //        this.length = length;
-    //    }
-
-    //    public Vector(Matrix m) : base(1, 1)
-    //    {
-    //        if (m)
-    //    }
-    //}
-
-    
 }
