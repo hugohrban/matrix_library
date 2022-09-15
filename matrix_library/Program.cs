@@ -24,14 +24,36 @@ namespace matrix_library
 
         public Matrix(string s)
         {
-            // input is either a two-dimensional int array or a string separated by semicolon
-            // in format such as: " 1 2; 3 4; 5 6 "
+            // input is either a two-dimensional int array or a string
+            // separated by semicolon, such as: " 1 2; 3 4; 5 6 "
             matrix = ParseInput(s);
             height = matrix.GetLength(0);
             width = matrix.GetLength(1);
         }
 
-        private float this[int row, int column]
+        private float[,] ParseInput(string s)
+        {
+            var rows = s.Trim().Split(';');
+            int height = rows.Length;
+            int width = rows[0].Trim().Split(' ').Length;
+            float[,] matrix = new float[height, width];
+
+            int row_index = 0;
+            foreach (string row in rows)
+            {
+                string[] line = row.Trim().Split(' ');
+                if (line.Length != width)
+                    throw new FormatException("Wrong input format.");
+                for (int i = 0; i < width; i++)
+                {
+                    matrix[row_index, i] = float.Parse(line[i]);
+                }
+                row_index++;
+            }
+            return matrix;
+        }
+
+        public float this[int row, int column]
         {
             get => matrix[row, column];
             set => matrix[row, column] = value;
@@ -69,31 +91,6 @@ namespace matrix_library
             }
         }
 
-        private float[,] ParseInput(string s)
-        {
-            // parse string input TODO put this in constructor
-            // TODO "I_n" creates identity matrik of rank n
-
-            var rows = s.Trim().Split(';');
-            int height = rows.Length;
-            int width = rows[0].Trim().Split(' ').Length;
-            float[,] matrix = new float[height, width];
-
-            int row_index = 0;
-            foreach (string row in rows) //TODO as a normal for loop
-            {
-                string[] line = row.Trim().Split(' ');
-                if (line.Length != width)
-                    throw new FormatException("Wrong input format.");
-                for (int i = 0; i < width; i++)
-                {
-                    matrix[row_index, i] = float.Parse(line[i]);
-                }
-                row_index++;
-            }
-            return matrix;
-        }
-
         private void AddRows(int indexFrom, int indexTo, float multiplier = 1)
         {
             // add multiple of one row to another
@@ -122,22 +119,10 @@ namespace matrix_library
                 matrix[i, i] = 1;
             return matrix;
         }
-
-        //public static int[] Eigenvalues()
-        //{
-        //    
-        //}
-
-        //public static int[,] Eigenvectors()
-        //{
-        //    
-        //}
-
         
-        private static Matrix Elimination(Matrix A, bool RREF = false, bool inverse = false)
+        private static Matrix Elimination(Matrix A, bool RREF = false, bool inverse = false, bool det = false)
         {
-            // Gauss (-Jordan) elimination. Also used to calculate inverse
-            // TODO maybe change of base
+            // Gauss (-Jordan) eliminatin. Also used to calculate inverse and determinant
 
             Matrix m = Copy(A);
             Matrix inv = IdentityMatrix(A.height);
@@ -145,6 +130,7 @@ namespace matrix_library
             int pivotColumn = 0;
             int pivotRow = 0;
             float f;
+            float d = 1;
 
             while (pivotColumn < m.width && pivotRow < m.height)
             {
@@ -166,12 +152,19 @@ namespace matrix_library
                 {
                     f = 1 / m[firstGoodPivotRow, pivotColumn];
                     m.SwapRows(pivotRow, firstGoodPivotRow);
+
+                    if (det && pivotRow != firstGoodPivotRow) d *= -1;
+
                     m.MultiplyRowByConst(pivotRow, f);
+
+                    if (det) d *= 1 / f;
 
                     if (inverse)
                     {
                         inv.SwapRows(pivotRow, firstGoodPivotRow);
+                        if (det && pivotRow != firstGoodPivotRow) d *= -1;
                         inv.MultiplyRowByConst(pivotRow, f);
+                        if (det) d *= 1 / f;
                     }
 
                     for (int i = 0; i < m.height; i++)
@@ -193,21 +186,41 @@ namespace matrix_library
 
             if (inverse)
                 return inv;
+
+            if (det)
+            {
+                for (int i = 0; i < m.height; i++)
+                    d *= m[i, i];
+                return new Matrix($"{d}");
+            }
+
             return m;
+        }
+
+        public static Matrix REF(Matrix A)
+        {
+            return Elimination(A);
+        }
+
+        public static Matrix RREF(Matrix A)
+        {
+            return Elimination(A, true);
+        }
+
+        private static bool IsZero(Matrix row)
+        {
+            // returns true if all values in the row are zero
+            for (int i = 0; i < row.width; i++)
+            {
+                if (row[0, i] != 0)
+                    return false;
+            }
+            return true;
         }
 
         public static int Rank(Matrix m)
         {
             var A = Elimination(m);
-            bool IsZero(Matrix row)
-            {
-                for (int i = 0; i < A.width; i++)
-                {
-                    if (row[0, i] != 0)
-                        return false;
-                }
-                return true;
-            }
 
             for (int i = 0; i < A.height; i++)
             {
@@ -217,25 +230,33 @@ namespace matrix_library
             return A.height;
         }
 
-        public static Matrix REF(Matrix A)
-        {
-            return Elimination(A);
-        }
-
         public static Matrix Inverse(Matrix A)
         {
             if (A.height != A.width || Rank(A) != A.height)
-                throw new Exception("cannot invert this.");
+                throw new Exception("Can only invert regular matrix.");
             return Elimination(A, true, true);
         }
 
-        public static Matrix RREF(Matrix A)
+
+        public static float Det(Matrix A)
         {
-            return Elimination(A, true);
+            if (A.height != A.width)
+                throw new Exception("Can only calculate determinant of a square matrix.");
+
+            else return Elimination(A, false, false, true)[0, 0];
+        }
+
+        public static float Trace(Matrix A)
+        {
+            float tr = 1;
+            for (int i = 0; i < Math.Min(A.height, A.width); i++)
+                tr += A[i, i];
+            return tr;
         }
 
         private static Matrix Copy(Matrix A)
         {
+            // creates a copy of the matrix
             float[,] copy = new float[A.height, A.width];
             for (int i = 0; i < A.height; i++)
             {
@@ -247,55 +268,29 @@ namespace matrix_library
             return new Matrix(copy);
         }
 
-        public static float det(Matrix A)
+        private static float Norm(Matrix v)
         {
-            if (A.height != A.width)
-                throw new Exception("Can only calculate determinant of a square matrix.");
-
-            if (A.height == 2)
-            {
-                return (A[0, 0] * A[1, 1]) - (A[0, 1] * A[1, 0]);
-            }
-            else return float.PositiveInfinity;
-        }
-
-        public static float norm(Matrix v)
-        {
+            // eucleidian norm
             return (float)Math.Sqrt(ScalarProduct(v, v));
         }
 
-        public static Matrix Eigen(Matrix A, bool eigVal = true)
+        public static Matrix EigenValues(Matrix A)
         {
             try
             {
-                var eigVals = QR_Algorithm(A, 50).diag();
-                if (eigVal)
-                    return eigVals;
-                return null; //TODO
+                var eigVals = QR_Algorithm(A, 50).Diag();
+                return eigVals;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-                Console.WriteLine("Couldn't calculate all eigenpairs.\nCalculating the largest one...");
+                Console.WriteLine("Couldn't calculate all eigenvalues.\nCalculating the largest one...");
                 var maxEigVector = PowerIteration(A, 50);
-                if (!eigVal)
-                    return maxEigVector.GetColumn(0);
-                else
-                    return new Matrix($"{(A * maxEigVector)[0, 0] / maxEigVector[0, 0]}");
+                return new Matrix($"{(A * maxEigVector)[0, 0] / maxEigVector[0, 0]}");
             }
         }
 
-        public static float[] EigenValues(Matrix A)
-        {
-            return ToArray(Eigen(A, true));
-        }
-
-        public static Matrix EigenVectors(Matrix A)
-        {
-            return Eigen(A, false); //TODO
-        }
-
-        private static float[] ToArray(Matrix A)
+        public static float[] ToArray(Matrix A)
         {
             if (A.height != 1 && A.width != 0)
                 throw new Exception("Cannot convert this Matrix to one-dimensional array.");
@@ -318,15 +313,15 @@ namespace matrix_library
 
             for (int i = 0; i < iter; i++)
             {
-                next_guess = (1 / norm(A * guess)) * (A * guess);
+                next_guess = (1 / Norm(A * guess)) * (A * guess);
                 guess = next_guess;
             }
             return guess;
         }
 
-        public static Matrix QR_Algorithm(Matrix A, int iter)
+        private static Matrix QR_Algorithm(Matrix A, int iter)
         {
-            // algorithm for computing eigen(values/vectors)
+            // algorithm for computing eigenvalues
             Matrix A_next = new Matrix(A.height, A.width);
             for (int i = 0; i < iter; i++)
             {
@@ -336,13 +331,10 @@ namespace matrix_library
                 A_next = R * Q;
                 A = A_next;
             }
-
-            //TODO
-
             return A_next;
         }
 
-        public static Matrix[] QR_Decomp(Matrix A)
+        private static Matrix[] QR_Decomp(Matrix A)
         {
             // A = Q*R, s.t Q orthogonal and R upper triang.
             Matrix Q = GramSchmidt(A);
@@ -357,10 +349,8 @@ namespace matrix_library
             // u_k = a_k - (sum j=1 -> (k-1) (proj(a_k, u_j)))    u_k is perpendicular to u_1..u_(k-1)
             // e_k = u_k / ||u_k||                                normalise
 
-            //TODO test
-
             if (Rank(A.Transpose()) != A.width)
-                throw new Exception("columns of input matrix must be linearly independent.");
+                throw new Exception("Columns of input matrix must be linearly independent.");
 
             Matrix q = new Matrix(A.height, A.width);
 
@@ -370,7 +360,7 @@ namespace matrix_library
             {
                 sum.ZeroOut();
                 for (int j = 0; j < i; j++)
-                    sum += proj(A.GetColumn(i), q.GetColumn(j));
+                    sum += Proj(A.GetColumn(i), q.GetColumn(j));
                 var u = A.GetColumn(i) - sum;
                 q.SetColumn(u, i);
             }
@@ -379,31 +369,26 @@ namespace matrix_library
             for (int i = 0; i < A.width; i++)
             {
                 var u = q.GetColumn(i);
-                var e = (1 / norm(u)) * u;
+                var e = (1 / Norm(u)) * u;
                 q.SetColumn(e, i);
             }
 
             return q;
         }
 
-        /// <summary>
-        /// Projection of vector a on vector u
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="u"></param>
-        /// <returns>Projection vector (Matrix type)</returns>
-        private static Matrix proj(Matrix a, Matrix u)
+        private static Matrix Proj(Matrix a, Matrix u)
         {
+            // projection of vector a onto vector u
             // (<u, a> / <u, u>) * u
             float c = ScalarProduct(u, a) /
                       ScalarProduct(u, u);
             return c * u;
         }
 
-        private Matrix diag()
+        private Matrix Diag()
         {
             if (height != width)
-                throw new Exception("A must be a square matrix");
+                throw new Exception("A must be a square matrix.");
             Matrix diag = new Matrix(height, 1);
             for (int i = 0; i < height; i++)
                 diag[i, 0] = this[i, i];
@@ -435,9 +420,6 @@ namespace matrix_library
         {
             // standard scalar (dot) product of two vectors
 
-            //if ((a.height != 1 && a.width != 1) || (b.height != 1 && b.width != 1))
-            //    throw new Exception("cannot do scalar product.");
-
             if (a.height == 1)
                 a = a.Transpose();
 
@@ -445,12 +427,11 @@ namespace matrix_library
                 b = b.Transpose();
 
             if (a.height != b.height || a.width != 1 || b.width != 1)
-                throw new Exception("cannot do scalar product.");
+                throw new Exception("Cannot do scalar product.");
 
             float res = 0;
 
             for (int i = 0; i < a.height; i++)
-                //res += a[0, i] * b[i, 0];
                 res += a[i, 0] * b[i, 0];
             
             return res;
@@ -474,15 +455,10 @@ namespace matrix_library
             return output;
         }
 
-        public string ToString(int i)
-        {
-            return base.ToString();
-        }
-
         public static Matrix operator +(Matrix a, Matrix b)
         {
             if ((a.height != b.height) || (a.width != b.width))
-                throw new FormatException("incorrect matrix dimensions");
+                throw new FormatException("Wrong matrix dimensions");
 
             var sum = new float[a.height, a.width];
             for (int i = 0; i < a.height; i++)
@@ -516,7 +492,8 @@ namespace matrix_library
         public static Matrix operator *(Matrix a, Matrix b)
         {
             if (a.width != b.height)
-                throw new Exception("wrong matrix dimensions");
+                throw new Exception("Wrong matrix dimensions.");
+
 
             var product = new float[a.height, b.width];
 
@@ -532,28 +509,45 @@ namespace matrix_library
 
         static void Main(string[] args)
         {
-            if (args.Length != 0) Console.WriteLine(args[0]);
-            var A = new Matrix("0 -20 -14 1; 3 27 -4 1; 4 11 -2 1");
-            //var B = new Matrix ("0 3 1 9; 1 1 -1 1; 3 11 5 35");
-            var B = new Matrix("0 1; 1 0");
-            //var QR = QR_Decomp(A);
-            //var Q = QR[0];
-            //var R = QR[1];
-            //Console.WriteLine(Q.ToString() + "\n" + R.ToString());
-            //Console.WriteLine(QR_Decomp(A)[0] * QR_Decomp(A)[1]);
-            //Console.WriteLine();
-            A = new Matrix("1.0 -1.0 0.0 0.0; -1.0 1.0 -1.0 0.0; 0.0 -1.0 2.0 0.0; 0.0 0.0 0.0 3.0");
-            //A = new Matrix("1 -1 0; 8 -2 6; 1 1 2");
-            //A = new Matrix("-12 3; 4 -1");
-            var eigv = new Matrix("-1; -2; 1");
-            
-            Console.WriteLine(Eigen(A));
-            //var QR = QR_Algorithm(A.Transpose(), 100);
-            //var Q = GramSchmidt(A);
-            
-            //Console.WriteLine(QR);
-            //Console.WriteLine(ScalarProduct(Q.GetColumn(1), Q.GetColumn(2)));
+            // examples
+            var A = new Matrix("4 3 2 2; 0 1 0 -2; 1 -1 3 3; 2 3 1 1");
 
+            Console.WriteLine("A =");
+            Console.WriteLine(A);
+
+            Console.WriteLine($"determinant = {Det(A)}\n");
+
+            Console.WriteLine("REF:");
+            Console.WriteLine(REF(A));
+
+            Console.WriteLine("RREF:");
+            Console.WriteLine(RREF(A));
+
+            Console.WriteLine("A^(-1)");
+            Console.WriteLine(Inverse(A));
+
+            Console.WriteLine("Eigenvalues:");
+            Console.WriteLine(EigenValues(A));
+
+            Console.WriteLine("2 * A =");
+            Console.WriteLine(3 * A);
+
+            Console.WriteLine("A * A =");
+            Console.WriteLine(A * A);
+
+            Console.WriteLine("QR decomposition:\nA =\n");
+            var QR = QR_Decomp(A);
+            Console.WriteLine(QR[0]);
+            Console.WriteLine("*\n");
+            Console.WriteLine(QR[1]);
+
+            Matrix B = new Matrix("2 5 1 4; 4 1 6 3; 5 3 7 2; 1 0 2 4");
+
+            Console.WriteLine("B =");
+            Console.WriteLine(B);
+
+            Console.WriteLine("Matrix multiplication:\nA * B =");
+            Console.WriteLine(A * B);
         }
     }
 }
