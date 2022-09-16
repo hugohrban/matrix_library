@@ -529,7 +529,7 @@ namespace matrix_library
             Console.WriteLine("Eigenvalues:");
             Console.WriteLine(EigenValues(A));
 
-            Console.WriteLine("2 * A =");
+            Console.WriteLine("3 * A =");
             Console.WriteLine(3 * A);
 
             Console.WriteLine("A * A =");
