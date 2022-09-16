@@ -8,13 +8,22 @@ namespace matrix_library
         private readonly int height;
         private readonly int width;
 
-        public Matrix(float[,] input)
+        /// <summary>
+        /// Creates a new <c>Matrix</c> object from a two-dimensional float array.
+        /// </summary>
+        /// <param name="array">2-dimensional float array</param>
+        public Matrix(float[,] array)
         {
-            matrix = input;
-            height = input.GetLength(0);
-            width = input.GetLength(1);
+            matrix = array;
+            height = array.GetLength(0);
+            width = array.GetLength(1);
         }
 
+        /// <summary>
+        /// Creates a new null <c>Matrix</c> with specified height and width.
+        /// </summary>
+        /// <param name="height"></param>
+        /// <param name="width"></param>
         public Matrix(int height, int width)
         {
             matrix = new float[height, width];
@@ -22,6 +31,16 @@ namespace matrix_library
             this.width = width;
         }
 
+        /// <summary>
+        /// Creates a new <c>Matrix</c> object from a string,
+        /// where numbers in a row are separated by space and rows are
+        /// separated by semi-colon.
+        /// <example>
+        /// For example:
+        /// <code>"3 1 0; 2 1 1; 5 6 2"</code>
+        /// </example>
+        /// </summary>
+        /// <param name="s">Input string</param>
         public Matrix(string s)
         {
             // input is either a two-dimensional int array or a string
@@ -112,6 +131,11 @@ namespace matrix_library
             SetRow(row, index);
         }
 
+        /// <summary>
+        /// Returns a new identity matrix.
+        /// </summary>
+        /// <param name="rank">Dimensions of the matrix</param>
+        /// <returns>Identity matrix</returns>
         public static Matrix IdentityMatrix(int rank)
         {
             var matrix = new Matrix(new float[rank, rank]);
@@ -197,11 +221,21 @@ namespace matrix_library
             return m;
         }
 
+        /// <summary>
+        /// Performs the Gaussian elimination on a <c>Matrix</c> object.
+        /// </summary>
+        /// <param name="A"></param>
+        /// <returns>Returns a new <c>Matrix</c> in the row echelon form.</returns>
         public static Matrix REF(Matrix A)
         {
             return Elimination(A);
         }
 
+        /// <summary>
+        /// Performs the Gauss-Jordan elimination on a <c>Matrix</c> object.
+        /// </summary>
+        /// <param name="A"></param>
+        /// <returns>Returns a new <c>Matrix</c> in the reduced row echelon form.</returns>
         public static Matrix RREF(Matrix A)
         {
             return Elimination(A, true);
@@ -218,18 +252,28 @@ namespace matrix_library
             return true;
         }
 
-        public static int Rank(Matrix m)
+        /// <summary>
+        /// Calculates the rank of a matrix.
+        /// </summary>
+        /// <param name="A">Input matrix</param>
+        /// <returns>Integer representing the number of linearly independent rows.</returns>
+        public static int Rank(Matrix A)
         {
-            var A = Elimination(m);
+            var m = Elimination(A);
 
-            for (int i = 0; i < A.height; i++)
+            for (int i = 0; i < m.height; i++)
             {
-                if (IsZero(A.GetRow(i)))
+                if (IsZero(m.GetRow(i)))
                     return i;
             }
-            return A.height;
+            return m.height;
         }
 
+        /// <summary>
+        /// Calculates the inverse of a <c>Matrix</c>.
+        /// </summary>
+        /// <param name="A">Regular matrix</param>
+        /// <returns>New inverted matrix</returns>
         public static Matrix Inverse(Matrix A)
         {
             if (A.height != A.width || Rank(A) != A.height)
@@ -237,7 +281,11 @@ namespace matrix_library
             return Elimination(A, true, true);
         }
 
-
+        /// <summary>
+        /// Calculates the determinant of a <c>Matrix</c>.
+        /// </summary>
+        /// <param name="A">Square matrix</param>
+        /// <returns>Float value - determinant of a matrix.</returns>
         public static float Det(Matrix A)
         {
             if (A.height != A.width)
@@ -246,6 +294,11 @@ namespace matrix_library
             else return Elimination(A, false, false, true)[0, 0];
         }
 
+        /// <summary>
+        /// Calculates the trace of a <c>Matrix</c>.
+        /// </summary>
+        /// <param name="A">Matrix</param>
+        /// <returns>The sum of elements on the diagonal.</returns>
         public static float Trace(Matrix A)
         {
             float tr = 1;
@@ -254,7 +307,12 @@ namespace matrix_library
             return tr;
         }
 
-        private static Matrix Copy(Matrix A)
+        /// <summary>
+        /// Makes a new copy of a <c>Matrix</c>.
+        /// </summary>
+        /// <param name="A">Matrix to be copied</param>
+        /// <returns>New Matrix object.</returns>
+        public static Matrix Copy(Matrix A)
         {
             // creates a copy of the matrix
             float[,] copy = new float[A.height, A.width];
@@ -274,6 +332,13 @@ namespace matrix_library
             return (float)Math.Sqrt(ScalarProduct(v, v));
         }
 
+        /// <summary>
+        /// Calculates the eigenvalues of a <c>Matrix</c>.
+        /// </summary>
+        /// <param name="A">Matrix</param>
+        /// <returns>For matrices with full column rank returns a vector
+        /// of all eigenvalues. Othrewise returns the eigenvalue with
+        /// largest absolute value.</returns>
         public static Matrix EigenValues(Matrix A)
         {
             try
@@ -290,6 +355,12 @@ namespace matrix_library
             }
         }
 
+        /// <summary>
+        /// Converts a vector (<c>Matrix</c> whose one dimension is
+        /// equal to one) to a <c>float[]</c>.
+        /// </summary>
+        /// <param name="A">Vector</param>
+        /// <returns>One-dimensional array of floats</returns>
         public static float[] ToArray(Matrix A)
         {
             if (A.height != 1 && A.width != 0)
@@ -385,7 +456,10 @@ namespace matrix_library
             return c * u;
         }
 
-        private Matrix Diag()
+        /// <summary>
+        /// Vector of elements on the diagonal.
+        /// </summary>
+        public Matrix Diag()
         {
             if (height != width)
                 throw new Exception("A must be a square matrix.");
@@ -403,6 +477,9 @@ namespace matrix_library
                     this[i, j] = 0;
         }
 
+        /// <summary>
+        /// Matrix transposition
+        /// </summary>
         public Matrix Transpose()
         {
             var AT = new float[width, height];
@@ -416,6 +493,13 @@ namespace matrix_library
             return new Matrix(AT);
         }
 
+        /// <summary>
+        /// Calculates the standard scalar product (dot product) of two vectors
+        /// (vector is a <c>Matrix</c>, whose one dimension is equal to one).
+        /// </summary>
+        /// <param name="a">vector</param>
+        /// <param name="b">vector</param>
+        /// <returns>Float that is equal to scalar product of the input vectors.</returns>
         public static float ScalarProduct(Matrix a, Matrix b)
         {
             // standard scalar (dot) product of two vectors
@@ -437,6 +521,11 @@ namespace matrix_library
             return res;
         }
 
+        /// <summary>
+        /// Converts a <c>Matrix</c> object to a string. Rounds the values
+        /// to three decimal places.
+        /// </summary>
+        /// <returns>String that represents the table of values in the matrix</returns>
         public override string ToString()
         {
             string output = "";
@@ -455,53 +544,69 @@ namespace matrix_library
             return output;
         }
 
-        public static Matrix operator +(Matrix a, Matrix b)
+        /// <summary>
+        /// Performs addition on two <c>Matrix</c> objects with same dimensions.
+        /// </summary>
+        public static Matrix operator +(Matrix A, Matrix B)
         {
-            if ((a.height != b.height) || (a.width != b.width))
+            if ((A.height != B.height) || (A.width != B.width))
                 throw new FormatException("Wrong matrix dimensions");
 
-            var sum = new float[a.height, a.width];
-            for (int i = 0; i < a.height; i++)
+            var sum = new float[A.height, A.width];
+            for (int i = 0; i < A.height; i++)
             {
-                for (int j = 0; j < a.width; j++)
+                for (int j = 0; j < A.width; j++)
                 {
-                    sum[i, j] = a[i, j] + b[i, j];
+                    sum[i, j] = A[i, j] + B[i, j];
                 }
             }
             return new Matrix(sum);
         }
 
+        /// <summary>
+        /// Performs subtraction of two <c>Matrix</c> objects with same dimensions.
+        /// </summary>
         public static Matrix operator -(Matrix A, Matrix B)
         {
             return A + ((-1) * B);
         }
 
-        public static Matrix operator *(float c, Matrix a)
+        /// <summary>
+        /// Scalar multiple of a <c>Matrix</c>.
+        /// </summary>
+        /// <param name="c">constant</param>
+        /// <param name="A">Matrix object</param>
+        public static Matrix operator *(float c, Matrix A)
         {
-            var multiple = new float[a.height, a.width];
-            for (int i = 0; i < a.height; i++)
+            var multiple = new float[A.height, A.width];
+            for (int i = 0; i < A.height; i++)
             {
-                for (int j = 0; j < a.width; j++)
+                for (int j = 0; j < A.width; j++)
                 {
-                    multiple[i, j] = c * a[i, j];
+                    multiple[i, j] = c * A[i, j];
                 }
             }
             return new Matrix(multiple);
         }
 
-        public static Matrix operator *(Matrix a, Matrix b)
+        /// <summary>
+        /// Matrix multiplication.
+        /// Width of left <c>Matrix</c> must be equal to height of right <c>Matrix</c>.
+        /// </summary>
+        /// <param name="A">Left Matrix</param>
+        /// <param name="B">Right Matrix</param>
+        public static Matrix operator *(Matrix A, Matrix B)
         {
-            if (a.width != b.height)
+            if (A.width != B.height)
                 throw new Exception("Wrong matrix dimensions.");
 
+            var product = new float[A.height, B.width];
 
-            var product = new float[a.height, b.width];
-
-            for (int i = 0; i < a.height; i++)
+            for (int i = 0; i < A.height; i++)
             {
-                for (int j = 0; j < b.width; j++)
+                for (int j = 0; j < B.width; j++)
                 {
-                    product[i, j] = ScalarProduct(a.GetRow(i), b.GetColumn(j));
+                    product[i, j] = ScalarProduct(A.GetRow(i), B.GetColumn(j));
                 }
             }
             return new Matrix(product);
