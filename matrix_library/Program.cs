@@ -413,10 +413,15 @@ namespace matrix_library
             return new Matrix[2] { Q, R };
         }
 
+        /// <summary>
+        /// Does Gram-Schmidt process for columns of a <c>Matrix</c> object.
+        /// </summary>
+        /// <param name="A">Input Matrix</param>
+        /// <returns>Returns new orthogonal matrix whose columns are
+        /// the orthonormal basis of S(A)</returns>
         private static Matrix GramSchmidt(Matrix A)
         {
-            // does G-S process for columns of A. Returns new orthogonal matrix which columns are the orth. basis of S(A)
-            // A must be square and its columns linearly independent
+            // A must be square and its columns linearly independent for QR decomp.
             // u_k = a_k - (sum j=1 -> (k-1) (proj(a_k, u_j)))    u_k is perpendicular to u_1..u_(k-1)
             // e_k = u_k / ||u_k||                                normalise
 
