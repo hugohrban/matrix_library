@@ -2,7 +2,7 @@
 
 namespace matrix_library
 {
-    class Matrix
+    public class Matrix
     {
         private float[,] matrix { get; set; }
         private readonly int height;
