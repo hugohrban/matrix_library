@@ -10,4 +10,5 @@ TODO:
 - SVD, 
 - diagonalization,
 - fix QR
+- fix determinant
 
